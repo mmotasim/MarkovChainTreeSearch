@@ -39,7 +39,10 @@ class State():
     def next_state(self):
         P = Passengers(self.current_loc)
         nbhdv = nbhd(self.current_loc)
-        a = nbhdv + ['T'] + list(P[0])
+        if P is not None:
+            a = nbhdv + ['T'] + list(P[0])
+        else:
+            a = nbhdv + ['T']
         R = 0
         self.action = random.choice(a)
         if self.action == 'T':
@@ -113,19 +116,22 @@ def Passengers(loc):
     dfp = df[df.pickup_community_area == loc]
     w = df[df.pickup_community_area == loc].count()
     a = w[1]
-    x = dfp[['dropoff_community_area', 'trip_total', 'trip_miles']]
-    dca = np.array(x)
-    dfpa = dfp.groupby(['pickup_community_area'], as_index=False)['pickup_community_area'].agg(['count'],
-                                                                                               as_index=False)
-    passcount = int(dfpa['count'])
-    P = [[y for x in range(4)] for y in range(a)]
-    for j in range(a):
-        P[j][0] = 'P' + str(P[j][0])  # passenger ID
-        P[j][1] = dca[j][0]  # dropoff community area
-        P[j][2] = dca[j][1] / passcount  # Expected fare for each passenger
-        P[j][3] = dca[j][2]  # trip distance for each trip
-    P = pd.DataFrame(P)
-    return P
+    if a>0:
+        x = dfp[['dropoff_community_area', 'trip_total', 'trip_miles']]
+        dca = np.array(x)
+        dfpa = dfp.groupby(['pickup_community_area'], as_index=False)['pickup_community_area'].agg(['count'],
+                                                                                                   as_index=False)
+        passcount = int(dfpa['count'])
+        P = [[y for x in range(4)] for y in range(a)]
+        for j in range(a):
+            P[j][0] = 'P' + str(P[j][0])  # passenger ID
+            P[j][1] = dca[j][0]  # dropoff community area
+            P[j][2] = dca[j][1] / passcount  # Expected fare for each passenger
+            P[j][3] = dca[j][2]  # trip distance for each trip
+        P = pd.DataFrame(P)
+        return P
+    else:
+        return None
 
 
 def nbhd(loc):
@@ -170,7 +176,7 @@ def EXPAND(node):
 
 # current this uses the most vanilla MCTS formula it is worth experimenting with THRESHOLD ASCENT (TAGS)
 def BESTCHILD(node, scalar):
-    bestscore = 0.0
+    bestscore = -100000
     bestchildren = []
     for c in node.children:
         exploit = c.reward / c.visits

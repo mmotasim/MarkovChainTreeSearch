@@ -11,7 +11,7 @@ df['trip_total'] = df.trip_total.str.replace('$', '').astype(float)
 dnbhd=pd.read_csv('neighbours.csv')
 dnbhd['Neighbour'] = dnbhd.Neighbour.str.split(',')
 K=5
-cost=10
+cost=1
 term=100
 driver=np.random.choice(df['taxi_ID'])
 dnbhd = dnbhd.iloc[0:77]
@@ -33,13 +33,14 @@ class State():
         self.locprime = locprime
         self.K = K
         self.R = R
-        self.loc.append(current_loc)
+        self.loc.append(current_loc)#working as we want it to. But, there is an inconsistency
         self.current_loc = current_loc
 
     def next_state(self):
         P = Passengers(self.current_loc)
         nbhdv = nbhd(self.current_loc)
         a = nbhdv + ['T'] + list(P[0])
+        R = 0
         self.action = random.choice(a)
         if self.action == 'T':
             next_loc = 'Term'
@@ -61,7 +62,7 @@ class State():
     def reward(self):
         r=0
         if self.action[0:1] == 'P':
-            P = Passengers(self.loc)
+            P = Passengers(self.current_loc)
             r = P[2][int(self.action[1:2])] - P[3][int(self.action[1:2])] * cost
         elif self.action == 'T':
             r = -term
@@ -137,7 +138,7 @@ def nbhd(loc):
 def UCTSEARCH(budget, root):
     for iter in range(int(budget)):
         front = TREEPOLICY(root)
-        reward = DEFAULTPOLICY(front.state)
+        reward = DEFAULTPOLICY(front)
         BACKUP(front, reward)
     return BESTCHILD(root, 0)
 
@@ -185,10 +186,13 @@ def BESTCHILD(node, scalar):
     return random.choice(bestchildren)
 
 
-def DEFAULTPOLICY(state):
-    while state.terminal() == False:
-        state = state.next_state()
-    return state.reward()
+def DEFAULTPOLICY(front):
+    reward=0
+    while front.state.terminal() == False:
+        reward=reward+front.parent.state.reward()
+        state = front.state.next_state()
+        front = Node(state,front)
+    return reward
 
 
 def BACKUP(node, reward):

@@ -44,6 +44,7 @@ class State():
         else:
             a = nbhdv + ['T']
         R = 0
+        self.num_moves=len(a)
         self.action = random.choice(a)
         if self.action == 'T':
             next_loc = 'Term'
@@ -113,10 +114,10 @@ class Node():
 
 
 def Passengers(loc):
-    dfp = df[df.pickup_community_area == loc]
-    w = df[df.pickup_community_area == loc].count()
-    a = w[1]
-    if a>0:
+    try:
+        dfp = df[df.pickup_community_area == loc]
+        w = df[df.pickup_community_area == loc].count()
+        a = w[1]
         x = dfp[['dropoff_community_area', 'trip_total', 'trip_miles']]
         dca = np.array(x)
         dfpa = dfp.groupby(['pickup_community_area'], as_index=False)['pickup_community_area'].agg(['count'],
@@ -130,7 +131,7 @@ def Passengers(loc):
             P[j][3] = dca[j][2]  # trip distance for each trip
         P = pd.DataFrame(P)
         return P
-    else:
+    except Exception:
         return None
 
 
